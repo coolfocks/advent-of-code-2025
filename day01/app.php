@@ -8,7 +8,7 @@ require_once __DIR__ . '/vendor/autoload.php';
 
 define('DEBUG', false);
 
-$file = __DIR__ . '/example.txt';
+$file = __DIR__ . '/input.txt';
 $contents = file_get_contents($file);
 $lines = explode(PHP_EOL, $contents);
 
@@ -34,12 +34,13 @@ function transformLineToDirection(string $line): object {
  * @param integer $position
  * @param Direction $direction
  * @param integer $value
- * @return integer
+ * @return object
  */
-function moveDial(int $position, Direction $direction, int $value): int {
+function moveDial(int $position, Direction $direction, int $value): object {
     if (DEBUG) {
         echo 'Dial is at ' . $position . ' .. rotating ' . $direction->value . $value . PHP_EOL;
     }
+    $howManyClicksAtZero = 0;
     $i = 1;
     // budem točit
     while ($i <= $value) {
@@ -61,9 +62,15 @@ function moveDial(int $position, Direction $direction, int $value): int {
                 $position += 1;
             }
         }
+        if ($position === 0) {
+            $howManyClicksAtZero++;
+        }
         $i++;
     }
-    return $position;
+    return (object) [
+        'position' => $position,
+        'zero_clicks' => $howManyClicksAtZero
+    ];
 }
 
 $tasks = [];
@@ -78,15 +85,19 @@ unset($file, $contents, $lines);
  */
 $dial = 50;
 $howManyTimesIsDialAtZero = 0;
+$howManyTimesIsDialAtZeroBonus = 0;
 foreach ($tasks as $task) {
-    $dial = moveDial(
+    $move = moveDial(
         position: $dial,
         direction: $task->direction,
         value: $task->value
     );
+    $dial = $move->position;
+    $howManyTimesIsDialAtZeroBonus += $move->zero_clicks;
     if ($dial === 0) {
         $howManyTimesIsDialAtZero++;
     }
 }
 
 echo 'Dial was at position 0 a total of ' . $howManyTimesIsDialAtZero . ' times.' . PHP_EOL;
+echo 'Bonus hits at position 0 during turning ' . $howManyTimesIsDialAtZeroBonus . PHP_EOL;
